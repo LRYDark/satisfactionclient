@@ -14,8 +14,18 @@ PluginSatisfactionclientRule::ensureSchema();
 PluginSatisfactionclientQuestion::ensureDefaults();
 PluginSatisfactionclientConfig::ensureDefaults();
 
-$csrf_token = Session::getNewCSRFToken();
+$csrf_token = Session::getNewCSRFToken(true);
 $config_url = Plugin::getWebDir('satisfactionclient') . '/front/config.form.php';
+
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    if (
+        empty($_POST['_glpi_csrf_token'])
+        || !defined('GLPI_VERSION')
+        || version_compare((string) GLPI_VERSION, '11.0.0', '<')
+    ) {
+        Session::checkCSRF($_POST, true);
+    }
+}
 
 function sc_sync_question_rules(string $questionKey, array $input): void
 {
@@ -48,7 +58,7 @@ function sc_sync_question_rules(string $questionKey, array $input): void
             'target_key' => $questionKey,
             'action' => 'show',
             'is_active' => 1,
-            'date_creation' => $_SESSION['glpi_currenttime'] ?? date('Y-m-d H:i:s'),
+            'date_creation' => sc_current_timestamp(),
         ]);
     } elseif ($visibilityMode === 'show_by_default' && $displayTrigger !== '') {
         $DB->insert($rulesTable, [
@@ -58,7 +68,7 @@ function sc_sync_question_rules(string $questionKey, array $input): void
             'target_key' => $questionKey,
             'action' => 'hide',
             'is_active' => 1,
-            'date_creation' => $_SESSION['glpi_currenttime'] ?? date('Y-m-d H:i:s'),
+            'date_creation' => sc_current_timestamp(),
         ]);
     }
 
@@ -73,7 +83,7 @@ function sc_sync_question_rules(string $questionKey, array $input): void
             'target_key' => $questionKey,
             'action' => 'require',
             'is_active' => 1,
-            'date_creation' => $_SESSION['glpi_currenttime'] ?? date('Y-m-d H:i:s'),
+            'date_creation' => sc_current_timestamp(),
         ]);
     }
 
@@ -90,15 +100,26 @@ function sc_sync_question_rules(string $questionKey, array $input): void
             'action' => 'email',
             'mail_to' => $mailTo,
             'is_active' => 1,
-            'date_creation' => $_SESSION['glpi_currenttime'] ?? date('Y-m-d H:i:s'),
+            'date_creation' => sc_current_timestamp(),
         ]);
     }
+}
+
+function sc_current_timestamp(): string
+{
+    static $current = null;
+
+    if ($current === null) {
+        $current = (string) ($_SESSION['glpi_currenttime'] ?? date('Y-m-d H:i:s'));
+    }
+
+    return $current;
 }
 
 if (isset($_POST['export_config'])) {
     $export = [
         'version' => PLUGIN_SATISFACTIONCLIENT_VERSION,
-        'exported_at' => $_SESSION['glpi_currenttime'] ?? date('Y-m-d H:i:s'),
+        'exported_at' => sc_current_timestamp(),
         'intro_text' => PluginSatisfactionclientConfig::getIntroText(),
         'questions' => PluginSatisfactionclientQuestion::getAll(),
         'rules' => PluginSatisfactionclientRule::getAll(),
@@ -173,7 +194,7 @@ if (isset($_POST['import_config'])) {
                     'require_on_match' => !empty($rule['require_on_match']) ? 1 : 0,
                     'mail_to' => $rule['mail_to'] ?? '',
                     'is_active' => !empty($rule['is_active']) ? 1 : 0,
-                    'date_creation' => $_SESSION['glpi_currenttime'] ?? date('Y-m-d H:i:s'),
+                    'date_creation' => sc_current_timestamp(),
                 ];
                 if (trim((string) $record['trigger_key']) === '' || trim((string) $record['target_key']) === '') {
                     continue;
@@ -1460,3 +1481,5 @@ JAVASCRIPT
 );
 
 Html::footer();
+
+

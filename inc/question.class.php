@@ -8,6 +8,24 @@ class PluginSatisfactionclientQuestion
 {
     private const TABLE = 'glpi_plugin_satisfactionclient_questions';
     private const VALID_TYPES = ['rating', 'yesno', 'text', 'short_text', 'number', 'date', 'email'];
+    private static bool $schemaEnsured = false;
+    private static ?array $cacheAll = null;
+    private static ?array $cacheActive = null;
+
+    private static function resetRuntimeCache(): void
+    {
+        self::$cacheAll = null;
+        self::$cacheActive = null;
+    }
+
+    private static function ensureSchemaCached(): void
+    {
+        if (self::$schemaEnsured) {
+            return;
+        }
+        self::ensureSchema();
+        self::$schemaEnsured = true;
+    }
 
     public static function ensureSchema(): void
     {
@@ -58,7 +76,7 @@ class PluginSatisfactionclientQuestion
             return;
         }
 
-        self::ensureSchema();
+        self::ensureSchemaCached();
 
         $dbu = new DbUtils();
         if ($dbu->countElementsInTable(self::TABLE, []) > 0) {
@@ -99,11 +117,15 @@ class PluginSatisfactionclientQuestion
     {
         global $DB;
 
+        if (self::$cacheActive !== null) {
+            return self::$cacheActive;
+        }
+
         if (!$DB->tableExists(self::TABLE)) {
             return [];
         }
 
-        self::ensureSchema();
+        self::ensureSchemaCached();
 
         $iterator = $DB->request([
             'FROM' => self::TABLE,
@@ -125,18 +147,23 @@ class PluginSatisfactionclientQuestion
             ];
         }
 
-        return $questions;
+        self::$cacheActive = $questions;
+        return self::$cacheActive;
     }
 
     public static function getAll(): array
     {
         global $DB;
 
+        if (self::$cacheAll !== null) {
+            return self::$cacheAll;
+        }
+
         if (!$DB->tableExists(self::TABLE)) {
             return [];
         }
 
-        self::ensureSchema();
+        self::ensureSchemaCached();
 
         $iterator = $DB->request([
             'FROM' => self::TABLE,
@@ -148,7 +175,8 @@ class PluginSatisfactionclientQuestion
             $rows[] = $row;
         }
 
-        return $rows;
+        self::$cacheAll = $rows;
+        return self::$cacheAll;
     }
 
     public static function getById(int $id): ?array
@@ -204,7 +232,11 @@ class PluginSatisfactionclientQuestion
             $record['question_key'] = self::ensureUniqueKey($record['question_key']);
         }
 
-        return (bool) $DB->insert(self::TABLE, $record);
+        $ok = (bool) $DB->insert(self::TABLE, $record);
+        if ($ok) {
+            self::resetRuntimeCache();
+        }
+        return $ok;
     }
 
     public static function update(int $id, array $input, ?string &$error = null): bool
@@ -264,7 +296,11 @@ class PluginSatisfactionclientQuestion
             return false;
         }
 
-        return (bool) $DB->update(self::TABLE, $record, ['id' => $id]);
+        $ok = (bool) $DB->update(self::TABLE, $record, ['id' => $id]);
+        if ($ok) {
+            self::resetRuntimeCache();
+        }
+        return $ok;
     }
 
     public static function delete(int $id): bool
@@ -281,7 +317,11 @@ class PluginSatisfactionclientQuestion
             }
         }
 
-        return (bool) $DB->delete(self::TABLE, ['id' => $id]);
+        $ok = (bool) $DB->delete(self::TABLE, ['id' => $id]);
+        if ($ok) {
+            self::resetRuntimeCache();
+        }
+        return $ok;
     }
 
     public static function updateOrder(array $ids): void
@@ -301,6 +341,7 @@ class PluginSatisfactionclientQuestion
             $DB->update(self::TABLE, ['position' => $position], ['id' => $id]);
             $position++;
         }
+        self::resetRuntimeCache();
     }
 
     public static function getTypeLabel(string $type): string
