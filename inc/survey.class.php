@@ -662,20 +662,18 @@ JAVASCRIPT;
             $lines[] = '- ' . $label . ' : ' . $displayValue;
         }
 
-        $mailer = new GLPIMailer();
-        $email = $mailer->getEmail();
-        $email->subject($subject);
-        $email->text(implode(PHP_EOL, $lines));
-
-        foreach ($recipients as $recipient) {
-            $email->addTo($recipient);
-        }
-
-        if (!empty($CFG_GLPI['admin_email'])) {
-            $email->from($CFG_GLPI['admin_email']);
-        }
-
-        $mailer->send();
+        // File d'attente des notifications de GLPI, envoi immédiat comme avant ; en cas d'échec, le mail reste en file
+        // et GLPI le réessaie (tâche « queuednotification »). Une ligne par destinataire.
+        PluginSatisfactionclientMailqueue::send([
+            'itemtype'    => Ticket::class,
+            'items_id'    => $ticketId,
+            'entities_id' => (int) ($ticket->fields['entities_id'] ?? 0),
+            'event'       => 'plugin_satisfactionclient_rule',
+            'subject'     => $subject,
+            'text'        => implode(PHP_EOL, $lines),
+            'to'          => array_map(static fn(string $recipient): array => [$recipient, ''], $recipients),
+            'from'        => !empty($CFG_GLPI['admin_email']) ? [(string) $CFG_GLPI['admin_email'], ''] : null,
+        ], true);
     }
 
     private static function parseRecipients(string $raw): array
