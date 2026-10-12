@@ -1,10 +1,9 @@
 <?php
 
-include '../../../inc/includes.php';
 
 $plugin = new Plugin();
 if (!$plugin->isInstalled('satisfactionclient') || !$plugin->isActivated('satisfactionclient')) {
-    Html::displayNotFoundError();
+    throw new \Glpi\Exception\Http\NotFoundHttpException();
 }
 
 Session::checkRight('config', UPDATE);
@@ -14,18 +13,7 @@ PluginSatisfactionclientRule::ensureSchema();
 PluginSatisfactionclientQuestion::ensureDefaults();
 PluginSatisfactionclientConfig::ensureDefaults();
 
-$csrf_token = Session::getNewCSRFToken(true);
-$config_url = Plugin::getWebDir('satisfactionclient') . '/front/config.form.php';
-
-if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
-    if (
-        empty($_POST['_glpi_csrf_token'])
-        || !defined('GLPI_VERSION')
-        || version_compare((string) GLPI_VERSION, '11.0.0', '<')
-    ) {
-        Session::checkCSRF($_POST, true);
-    }
-}
+$config_url = (($GLOBALS['CFG_GLPI']['root_doc'] ?? '') . '/plugins/satisfactionclient') . '/front/config.form.php';
 
 function sc_sync_question_rules(string $questionKey, array $input): void
 {
@@ -354,7 +342,6 @@ echo "<div class='row g-3 align-items-end'>";
 echo "<div class='col-md-6'>";
 echo "<label class='form-label mb-1'>Importer une configuration (JSON)</label>";
 echo "<form method='post' action='" . $config_url . "' enctype='multipart/form-data'>";
-echo Html::hidden('_glpi_csrf_token', ['value' => $csrf_token]);
 echo "<input class='form-control' type='file' name='config_file' accept='application/json' required>";
 echo "<div class='mt-2'>";
 echo Html::submit('Importer', ['name' => 'import_config', 'class' => 'btn btn-primary']);
@@ -365,7 +352,6 @@ echo "</div>";
 echo "<div class='col-md-6'>";
 echo "<label class='form-label mb-1'>Exporter la configuration actuelle</label>";
 echo "<form method='post' action='" . $config_url . "'>";
-echo Html::hidden('_glpi_csrf_token', ['value' => $csrf_token]);
 echo "<div class='mt-2'>";
 echo Html::submit('Exporter', ['name' => 'export_config', 'class' => 'btn btn-outline-primary']);
 echo "</div>";
@@ -381,7 +367,6 @@ echo "<div class='card mb-3'>";
 echo "<div class='card-header'><h3 class='card-title mb-0'>Texte d'introduction du modal</h3></div>";
 echo "<div class='card-body'>";
 echo "<form method='post' action='" . $config_url . "'>";
-echo Html::hidden('_glpi_csrf_token', ['value' => $csrf_token]);
 echo "<textarea class='form-control' name='intro_text' rows='1'>" . htmlescape($introText) . "</textarea>";
 echo "<div class='mt-2'>";
 echo Html::submit('Enregistrer', ['name' => 'update_intro', 'class' => 'btn btn-primary']);
@@ -394,7 +379,6 @@ echo "<div class='modal fade' id='scQuestionModal' tabindex='-1' aria-hidden='tr
 echo "<div class='modal-dialog modal-lg'>";
 echo "<div class='modal-content'>";
 echo "<form method='post' action='" . $config_url . "' id='sc_question_form'>";
-echo Html::hidden('_glpi_csrf_token', ['value' => $csrf_token]);
 echo "<input type='hidden' name='id' id='sc_question_id' value=''>";
 echo "<input type='hidden' name='question_key' id='sc_question_key' value=''>";
 echo "<div class='modal-header'>";
@@ -923,7 +907,6 @@ if (empty($questions)) {
     echo "</div>";
     echo "</div>";
     echo "<form method='post' action='" . $config_url . "' id='sc-order-form' class='mb-2'>";
-    echo Html::hidden('_glpi_csrf_token', ['value' => $csrf_token]);
     echo "</form>";
 
     echo "<div class='table-responsive'>";
@@ -987,7 +970,6 @@ if (empty($questions)) {
         }
         echo "<button type='button' class='btn btn-sm btn-outline-primary me-2 sc-question-edit'{$qAttrString}>Modifier</button>";
         echo "<form method='post' action='" . $config_url . "' style='display:inline-block'>";
-        echo Html::hidden('_glpi_csrf_token', ['value' => $csrf_token]);
         echo "<button class='btn btn-sm btn-outline-danger' type='submit' name='delete_question' value='" . $rowId . "' onclick=\"return confirm('Supprimer cette question ?');\">Supprimer</button>";
         echo "</form>";
         echo "</td>";

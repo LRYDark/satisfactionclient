@@ -1,14 +1,13 @@
 <?php
 
-define('PLUGIN_SATISFACTIONCLIENT_VERSION', '1.1.4');
-define('PLUGIN_SATISFACTIONCLIENT_MIN_GLPI', '11.0.0');
-define('PLUGIN_SATISFACTIONCLIENT_MAX_GLPI', '11.0.99');
+define('PLUGIN_SATISFACTIONCLIENT_VERSION', '1.2.0');
+define('PLUGIN_SATISFACTIONCLIENT_MIN_GLPI', '12.0.0');
+define('PLUGIN_SATISFACTIONCLIENT_MAX_GLPI', '12.0.99');
 
 function plugin_init_satisfactionclient()
 {
     global $PLUGIN_HOOKS;
 
-    $PLUGIN_HOOKS['csrf_compliant']['satisfactionclient'] = true;
 
     $plugin = new Plugin();
     if ($plugin->isInstalled('satisfactionclient') && $plugin->isActivated('satisfactionclient')) {
