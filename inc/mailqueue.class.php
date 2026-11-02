@@ -72,10 +72,13 @@ class PluginSatisfactionclientMailqueue
         // l'objet du mail (ticket, utilisateur, entité) et intègre ceux dont le tag apparaît dans le corps — un ancien
         // document sans tag s'intégrerait à tort. Sans document voulu, la source des documents est donc un objet que
         // GLPI écarte sans rien lire (utilisateur n° 0) : aucun document, jamais, comme l'envoi direct d'avant.
+        // Un mail TEXTE seul garde « aucun document » : GLPI n'y lit alors aucun document et ne consulte pas le réglage
+        // `attach_documents_to_notifications_for_anonymous`. Ce réglage manque dans certaines bases mises à jour, et le
+        // lire donnait un « Undefined array key » à chaque mail envoyé à une adresse inconnue de GLPI.
         $attach       = (int) ($mail['attach_documents'] ?? NotificationSetting::ATTACH_NO_DOCUMENT);
         $trigger_type = $mail['itemtype_trigger'] ?? null;
         $trigger_id   = (int) ($mail['items_id_trigger'] ?? 0);
-        if ($attach === NotificationSetting::ATTACH_NO_DOCUMENT) {
+        if ($attach === NotificationSetting::ATTACH_NO_DOCUMENT && !empty($mail['html'])) {
             $attach       = NotificationSetting::ATTACH_FROM_TRIGGER_ONLY;
             $trigger_type = User::class;
             $trigger_id   = 0;

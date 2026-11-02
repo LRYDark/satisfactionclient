@@ -1,5 +1,15 @@
 # Journal des changements
 
+## 1.2.1 — 2026-11-02
+
+**Après la mise à jour : cliquer « Mettre à jour » dans Configuration → Plugins.**
+
+- Mails texte sans pièce jointe envoyés par la file d'attente de GLPI : plus d'avertissement « Undefined array
+  key "attach_documents_to_notifications_for_anonymous" » quand ce réglage manque dans la base de GLPI (vu en
+  production le 02/11/2026).
+- CI GitHub : syntaxe sur PHP 8.3 à 8.5, installation réelle dans GLPI 12.0.1, chargement de chaque classe,
+  parcours des pages et de leurs onglets.
+
 ## 1.2.0 — 2026-10-12
 
 Première version pour GLPI 12 (12.0.x). La série 1.1.x reste celle de GLPI 11.
